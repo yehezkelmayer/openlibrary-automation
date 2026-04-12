@@ -1,0 +1,49 @@
+{
+  "generated_at": "2026-04-12T22:56:42.545488",
+  "total_measurements": 3,
+  "thresholds_exceeded": 3,
+  "measurements": [
+    {
+      "page_name": "https://openlibrary.org/search?q=python",
+      "url": "https://openlibrary.org/search?q=python",
+      "timestamp": "2026-04-12T22:56:27.285832",
+      "metrics": {
+        "load_time_ms": 5640,
+        "dom_content_loaded_ms": 2518,
+        "first_paint_ms": 2025.4000000059605
+      },
+      "threshold_ms": 3000,
+      "exceeded_threshold": true
+    },
+    {
+      "page_name": "https://openlibrary.org/works/OL45883W",
+      "url": "https://openlibrary.org/works/OL45883W",
+      "timestamp": "2026-04-12T22:56:37.278213",
+      "metrics": {
+        "load_time_ms": 4444,
+        "dom_content_loaded_ms": 2513,
+        "first_paint_ms": 2138.7000000029802
+      },
+      "threshold_ms": 2500,
+      "exceeded_threshold": true
+    },
+    {
+      "page_name": "https://openlibrary.org/account/books/want-to-read",
+      "url": "https://openlibrary.org/account/books/want-to-read",
+      "timestamp": "2026-04-12T22:56:42.545193",
+      "metrics": {
+        "load_time_ms": 4387,
+        "dom_content_loaded_ms": 1464,
+        "first_paint_ms": 1286.6000000089407
+      },
+      "threshold_ms": 2000,
+      "exceeded_threshold": true
+    }
+  ],
+  "summary": {
+    "avg_load_time_ms": 4823.666666666667,
+    "max_load_time_ms": 5640,
+    "min_load_time_ms": 4387,
+    "total_pages_measured": 3
+  }
+}

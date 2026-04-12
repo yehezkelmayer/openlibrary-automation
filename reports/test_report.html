@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenLibrary Test Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #4CAF50;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .summary-card h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        .summary-card.passed h3 { color: #4CAF50; }
+        .summary-card.warned h3 { color: #FF9800; }
+        .summary-card.failed h3 { color: #f44336; }
+        .summary-card.total h3 { color: #2196F3; }
+        .steps {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .step {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .step:last-child { border-bottom: none; }
+        .step-status {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+            min-width: 70px;
+            text-align: center;
+        }
+        .step-status.PASS { background: #E8F5E9; color: #2E7D32; }
+        .step-status.WARN { background: #FFF3E0; color: #E65100; }
+        .step-status.FAIL { background: #FFEBEE; color: #C62828; }
+        .step-name {
+            font-weight: 500;
+            flex: 1;
+        }
+        .step-details {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .details-toggle {
+            cursor: pointer;
+            color: #2196F3;
+            font-size: 0.85em;
+        }
+        .details-content {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .screenshots {
+            margin-top: 30px;
+        }
+        .screenshots h2 {
+            margin-bottom: 15px;
+        }
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .screenshot-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .screenshot-card img {
+            width: 100%;
+            height: auto;
+        }
+        .screenshot-card .caption {
+            padding: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OpenLibrary Automation Test Report</h1>
+
+        <div class="summary">
+            <div class="summary-card total">
+                <h3>4</h3>
+                <p>Total Steps</p>
+            </div>
+            <div class="summary-card passed">
+                <h3>1</h3>
+                <p>Passed</p>
+            </div>
+            <div class="summary-card warned">
+                <h3>3</h3>
+                <p>Warnings</p>
+            </div>
+            <div class="summary-card failed">
+                <h3>0</h3>
+                <p>Failed</p>
+            </div>
+        </div>
+
+        <div class="steps">
+            <h2 style="padding: 15px 20px; background: #f9f9f9; border-bottom: 1px solid #eee;">Test Steps</h2>
+            
+            <div class="step">
+                <span class="step-status PASS">PASS</span>
+                <span class="step-name">Search Books</span>
+                <span class="details-toggle" onclick="toggleDetails('details-0')">
+                    [Details]
+                </span>
+            </div>
+            <div id="details-0" class="details-content" style="margin: 0 20px 15px 20px;">
+{
+  "searches": [
+    {
+      "query": "Dune",
+      "max_year": 1985,
+      "limit": 5
+    },
+    {
+      "query": "Foundation",
+      "max_year": 1970,
+      "limit": 4
+    },
+    {
+      "query": "1984",
+      "max_year": 1950,
+      "limit": 3
+    },
+    {
+      "query": "Brave New World",
+      "max_year": 1940,
+      "limit": 3
+    }
+  ],
+  "total_found": 15,
+  "urls": [
+    "https://openlibrary.org/works/OL893415W/Dune",
+    "https://openlibrary.org/works/OL893526W/Dune_Messiah",
+    "https://openlibrary.org/works/OL260382W/Mémoires_d'une_jeune_fille_rangée",
+    "https://openlibrary.org/works/OL893516W/Children_of_Dune",
+    "https://openlibrary.org/works/OL893515W/God_Emperor_of_Dune",
+    "https://openlibrary.org/works/OL46125W/Foundation",
+    "https://openlibrary.org/works/OL46309W/Second_Foundation",
+    "https://openlibrary.org/works/OL46224W/Foundation_and_Empire",
+    "https://openlibrary.org/works/OL46302W/Foundation's_Edge",
+    "https://openlibrary.org/works/OL11326416W/1984_(adaptation)",
+    "https://openlibrary.org/works/OL20735675M/1984_annual_directory_of_booksellers_in_the_British_Isles_Specialising_in_antiquarian_and_out-of-pri",
+    "https://openlibrary.org/works/OL30827457W/1984",
+    "https://openlibrary.org/works/OL64365W/Brave_New_World",
+    "https://openlibrary.org/works/OL64440W/Brave_New_World_and_Brave_New_World_Revisited",
+    "https://openlibrary.org/works/OL64448W/Brave_New_World_Revisited"
+  ]
+}
+            </div>
+        
+            <div class="step">
+                <span class="step-status WARN">WARN</span>
+                <span class="step-name">Performance: Search Page</span>
+                <span class="details-toggle" onclick="toggleDetails('details-1')">
+                    [Details]
+                </span>
+            </div>
+            <div id="details-1" class="details-content" style="margin: 0 20px 15px 20px;">
+{
+  "load_time_ms": 5640,
+  "dom_content_loaded_ms": 2518,
+  "first_paint_ms": 2025.4000000059605,
+  "threshold_ms": 3000,
+  "exceeded": true
+}
+            </div>
+        
+            <div class="step">
+                <span class="step-status WARN">WARN</span>
+                <span class="step-name">Performance: Book Page</span>
+                <span class="details-toggle" onclick="toggleDetails('details-2')">
+                    [Details]
+                </span>
+            </div>
+            <div id="details-2" class="details-content" style="margin: 0 20px 15px 20px;">
+{
+  "load_time_ms": 4444,
+  "dom_content_loaded_ms": 2513,
+  "first_paint_ms": 2138.7000000029802,
+  "threshold_ms": 2500,
+  "exceeded": true
+}
+            </div>
+        
+            <div class="step">
+                <span class="step-status WARN">WARN</span>
+                <span class="step-name">Performance: Reading List</span>
+                <span class="details-toggle" onclick="toggleDetails('details-3')">
+                    [Details]
+                </span>
+            </div>
+            <div id="details-3" class="details-content" style="margin: 0 20px 15px 20px;">
+{
+  "load_time_ms": 4387,
+  "dom_content_loaded_ms": 1464,
+  "first_paint_ms": 1286.6000000089407,
+  "threshold_ms": 2000,
+  "exceeded": true
+}
+            </div>
+        
+        </div>
+
+        <div class="footer">
+            <p>Generated: 2026-04-12 22:56:42</p>
+            <p>Duration: 0:01:20.277111</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleDetails(id) {
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
