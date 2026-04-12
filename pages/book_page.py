@@ -6,7 +6,6 @@ from .base_page import BasePage
 
 logger = logging.getLogger(__name__)
 
-# Selectors from example project - proven to work
 SELECTORS = {
     "master_button": "button.book-progress-btn.primary-action > span.btn-text",
     "master_button_active": "button.book-progress-btn.primary-action.activated > span.btn-text",

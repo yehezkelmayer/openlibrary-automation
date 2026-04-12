@@ -218,5 +218,4 @@ Generated at `reports/performance_report.json` with format:
 - Python 3.10+
 - Playwright 1.49+
 - pytest 8.3+
-- allure-pytest 2.13+
 - PyYAML 6.0+
