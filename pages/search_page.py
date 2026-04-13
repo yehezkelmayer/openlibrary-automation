@@ -17,7 +17,7 @@ class SearchPage(BasePage):
     BOOK_LINK = "h3.booktitle > a"
     BOOK_TITLE = "h3.booktitle"
     NO_RESULTS = "text=No results found"
-    NEXT_PAGE = "a.ChoosePage[title='Go to the next page']"
+    NEXT_PAGE = "a.ChoosePage[title='Go to next page']"
 
     def __init__(self, page: Page):
         """Initialize SearchPage."""

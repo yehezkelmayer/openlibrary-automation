@@ -30,8 +30,6 @@ openlibrary_automation/
 │   └── test_functions.py    # Core test functions
 ├── screenshots/             # Test screenshots
 ├── reports/                 # HTML & JSON reports
-├── conftest.py              # Pytest fixtures (optional)
-├── pytest.ini               # Pytest configuration
 ├── requirements.txt         # Dependencies
 └── README.md
 ```
@@ -106,24 +104,12 @@ After setup, the automation will use the saved session.
 
 ## Running Tests
 
-### Run Main Test Suite
 ```bash
 # Run with visible browser
 HEADLESS=false python main.py
 
 # Run headless (default)
 python main.py
-```
-
-### Run with pytest (optional)
-```bash
-pytest tests/
-```
-
-### Run with Allure Reports
-```bash
-pytest --alluredir=reports/allure-results
-allure serve reports/allure-results
 ```
 
 ## Test Functions
@@ -217,5 +203,4 @@ Generated at `reports/performance_report.json` with format:
 
 - Python 3.10+
 - Playwright 1.49+
-- pytest 8.3+
 - PyYAML 6.0+
