@@ -83,16 +83,18 @@ class SearchPage(BasePage):
 
                     # Check year if filter is set
                     if self._max_year:
-                        year_el = await item.query_selector("span.publishedYear")
-                        if year_el:
-                            year_text = await year_el.inner_text()
-                            year_match = re.search(r'\d{4}', year_text)
-                            if year_match:
-                                year = int(year_match.group())
-                                if year > self._max_year:
-                                    logger.debug(f"Skipping {title.strip()} - year {year} > {self._max_year}")
-                                    continue
-                        # If no year element found, include the book anyway
+                        # Find "First published in YYYY" text
+                        item_text = await item.inner_text()
+                        year_match = re.search(r'(?:First published|published).*?(\d{4})', item_text, re.IGNORECASE)
+                        if year_match:
+                            year = int(year_match.group(1))
+                            if year > self._max_year:
+                                logger.debug(f"Skipping {title.strip()} - year {year} > {self._max_year}")
+                                continue
+                        else:
+                            # No year found - skip when filtering by year
+                            logger.debug(f"Skipping {title.strip()} - no year found")
+                            continue
 
                     link = await item.query_selector(self.BOOK_LINK)
                     if link:

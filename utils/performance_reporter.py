@@ -58,12 +58,13 @@ class PerformanceReporter:
         Check if any metric exceeds the threshold.
 
         Returns:
-            True if threshold exceeded, False otherwise
+            True if threshold exceeded, False otherwise, None if invalid measurement
         """
         load_time = metrics.get("load_time_ms")
-        if load_time and load_time > threshold_ms:
-            return True
-        return False
+        if load_time is None or load_time <= 0:
+            logger.warning(f"Invalid load_time: {load_time}")
+            return False
+        return load_time > threshold_ms
 
     def generate_report(self) -> dict:
         """Generate the performance report."""

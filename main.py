@@ -137,7 +137,8 @@ async def main():
             actually_added = await add_books_to_reading_list(
                 book_page=book_page,
                 urls=urls[:books_to_add],
-                screenshot_dir=str(SCREENSHOTS_DIR)
+                screenshot_dir=str(SCREENSHOTS_DIR),
+                random_seed=42  # Fixed seed for reproducible results
             )
 
             print(f"\n>>> Added {actually_added} books to reading list (attempted {books_to_add})")

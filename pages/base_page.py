@@ -1,12 +1,7 @@
 """Base Page Object with common functionality."""
 import logging
-import sys
 from pathlib import Path
-from playwright.async_api import Page, expect
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from helpers.browser import Browser
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +14,6 @@ class BasePage:
     def __init__(self, page: Page):
         """Initialize BasePage with Playwright page instance."""
         self.page = page
-
-    @classmethod
-    async def create(cls, page: Page | None = None) -> "BasePage":
-        """Factory method to create page object with automatic page retrieval."""
-        if page is None:
-            page = await Browser.get_instance().get_page()
-        instance = cls(page)
-        return instance
 
     async def navigate(self, path: str = "") -> None:
         """Navigate to a specific path."""
