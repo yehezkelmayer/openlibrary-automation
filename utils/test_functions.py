@@ -50,7 +50,7 @@ async def add_books_to_reading_list(
     page: Page,
     urls: list[str],
     screenshot_dir: str = "screenshots"
-) -> None:
+) -> int:
     """
     Add books to reading list with random status selection.
 
@@ -58,12 +58,16 @@ async def add_books_to_reading_list(
         page: Playwright page instance
         urls: List of book URLs to add
         screenshot_dir: Directory to save screenshots
+
+    Returns:
+        Number of books successfully added
     """
     logger.info(f"Adding {len(urls)} books to reading list")
 
     book_page = BookPage(page)
+    success_count = 0
 
-    for url in urls:
+    for idx, url in enumerate(urls, 1):
         try:
             await book_page.navigate_to_book(url)
 
@@ -77,16 +81,22 @@ async def add_books_to_reading_list(
             # Add to reading list
             selected_status = await book_page.add_to_reading_list(status)
 
-            # Take screenshot
-            safe_title = "".join(c if c.isalnum() else "_" for c in title[:30])
-            screenshot_name = f"{safe_title}_{selected_status}"
+            # Check if actually added
+            if selected_status is not None:
+                success_count += 1
+
+            # Take screenshot with index to avoid overwrites
+            safe_title = "".join(c if c.isalnum() else "_" for c in title[:25])
+            screenshot_name = f"{idx:02d}_{safe_title}_{selected_status}"
             await book_page.take_screenshot(screenshot_name, screenshot_dir)
 
-            logger.info(f"Added '{title}' with status: {selected_status}")
+            logger.info(f"[{idx}/{len(urls)}] Added '{title}' with status: {selected_status}")
 
         except Exception as e:
             logger.error(f"Error adding book {url}: {e}")
             continue
+
+    return success_count
 
 
 async def assert_reading_list_count(

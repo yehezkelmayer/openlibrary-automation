@@ -46,15 +46,14 @@ class SearchPage(BasePage):
 
         # Wait for search results to appear
         try:
-            await self.page.wait_for_selector(self.SEARCH_RESULTS, timeout=15000)
+            await self.page.wait_for_selector(self.SEARCH_RESULTS, timeout=10000)
         except Exception:
             # No results found, wait a bit for page to settle
-            await self.page.wait_for_timeout(2000)
+            await self.page.wait_for_timeout(500)
 
     async def get_search_results(self) -> list:
         """Get all search result elements."""
-        await self.page.wait_for_load_state("networkidle")
-        await self.page.wait_for_timeout(500)
+        await self.page.wait_for_load_state("domcontentloaded")
         return await self.page.query_selector_all(self.SEARCH_RESULTS)
 
     async def get_book_urls(self, limit: int = 5) -> list[str]:
@@ -124,7 +123,7 @@ class SearchPage(BasePage):
             if next_btn:
                 await next_btn.click()
                 await self.page.wait_for_load_state("domcontentloaded")
-                await self.page.wait_for_timeout(1000)
+                await self.page.wait_for_timeout(300)
                 return True
             return False
         except Exception as e:

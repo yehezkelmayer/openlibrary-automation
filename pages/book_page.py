@@ -18,7 +18,15 @@ SELECTORS = {
 class BookPage(BasePage):
     """Page Object for OpenLibrary book page."""
 
-    BOOK_TITLE = "h1.work-title, h1[itemprop='name']"
+    # Multiple selectors for book title - different page types have different structures
+    BOOK_TITLE_SELECTORS = [
+        "h1.work-title",
+        "h1[itemprop='name']",
+        ".workTitle h1",
+        "h1.title",
+        ".book-title h1",
+        "h1",  # Fallback to any h1
+    ]
 
     def __init__(self, page: Page):
         """Initialize BookPage."""
@@ -28,20 +36,26 @@ class BookPage(BasePage):
         """Navigate to a specific book page."""
         logger.info(f"Navigating to book: {url}")
         await self.page.goto(url)
-        await self.page.wait_for_load_state("networkidle")
+        await self.page.wait_for_load_state("domcontentloaded")
 
         # Wait for the reading list dropdown to appear
         try:
-            await self.page.wait_for_selector(SELECTORS["dropper_wrapper"], timeout=10000)
+            await self.page.wait_for_selector(SELECTORS["dropper_wrapper"], timeout=5000)
         except Exception:
             logger.warning("Reading list dropdown not found - user might not be logged in")
 
     async def get_book_title(self) -> str:
         """Get the book title."""
-        try:
-            return await self.get_element_text(self.BOOK_TITLE)
-        except Exception:
-            return "Unknown Title"
+        for selector in self.BOOK_TITLE_SELECTORS:
+            try:
+                element = await self.page.query_selector(selector)
+                if element:
+                    title = await element.inner_text()
+                    if title and title.strip():
+                        return title.strip()
+            except Exception:
+                continue
+        return "Unknown Title"
 
     async def _click_master_button(self, target_text: str) -> bool | str:
         """
@@ -71,7 +85,7 @@ class BookPage(BasePage):
             btn_text = (await master_btn.inner_text()).strip().lower()
             if btn_text == target_text.lower():
                 await master_btn.click()
-                await self.page.wait_for_timeout(1000)
+                await self.page.wait_for_timeout(300)
                 logger.info(f"Clicked master button: {target_text}")
                 return True
 
@@ -82,7 +96,7 @@ class BookPage(BasePage):
         arrow = await self.page.query_selector(SELECTORS["arrow_button"])
         if arrow:
             await arrow.click()
-            await self.page.wait_for_timeout(500)
+            await self.page.wait_for_timeout(200)
 
     async def _click_reading_button(self, target_text: str) -> bool:
         """Click a specific reading status button from the dropdown."""
@@ -94,10 +108,10 @@ class BookPage(BasePage):
                 # Check if visible, expand dropdown if not
                 if not await btn.is_visible():
                     await self._expand_dropdown()
-                    await self.page.wait_for_timeout(300)
+                    await self.page.wait_for_timeout(150)
 
                 await btn.click()
-                await self.page.wait_for_timeout(1000)
+                await self.page.wait_for_timeout(300)
                 logger.info(f"Clicked reading button: {target_text}")
                 return True
 
@@ -140,7 +154,7 @@ class BookPage(BasePage):
                 return status
 
         logger.warning(f"Could not add book with status: {status}")
-        return status
+        return None  # Return None to indicate failure
 
     async def get_book_info(self) -> dict:
         """Get book information."""

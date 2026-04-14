@@ -50,7 +50,7 @@ class BasePage:
 
     async def wait_for_load(self) -> None:
         """Wait for the page to fully load."""
-        await self.page.wait_for_load_state("networkidle")
+        await self.page.wait_for_load_state("domcontentloaded")
 
     async def get_element_text(self, selector: str) -> str:
         """Get text content of an element."""

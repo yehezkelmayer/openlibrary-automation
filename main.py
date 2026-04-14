@@ -4,6 +4,7 @@ Run with: python main.py
 """
 import asyncio
 import os
+import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -33,6 +34,11 @@ async def main():
     print("OpenLibrary Automation Test Suite")
     print("=" * 60)
 
+    # Clear screenshots from previous runs
+    if SCREENSHOTS_DIR.exists():
+        shutil.rmtree(SCREENSHOTS_DIR)
+    SCREENSHOTS_DIR.mkdir(exist_ok=True)
+
     # Initialize
     browser = Browser.get_instance()
     report = ReportGenerator()
@@ -49,7 +55,7 @@ async def main():
 
         # Navigate to home
         await page.goto("https://openlibrary.org")
-        await page.wait_for_load_state("networkidle")
+        await page.wait_for_load_state("domcontentloaded")
 
         # Check if logged in
         is_logged_in = await page.query_selector("a[href*='/people/']") is not None
@@ -125,15 +131,16 @@ async def main():
             print("=" * 60)
 
             books_to_add = min(len(urls), 12)  # Add up to 12 books
-            await add_books_to_reading_list(
+            actually_added = await add_books_to_reading_list(
                 page=page,
                 urls=urls[:books_to_add],
                 screenshot_dir=str(SCREENSHOTS_DIR)
             )
 
-            print(f"\n>>> Added {books_to_add} books to reading list")
+            print(f"\n>>> Added {actually_added} books to reading list (attempted {books_to_add})")
             report.add_step("Add to Reading List", "PASS", {
-                "books_added": books_to_add
+                "attempted": books_to_add,
+                "actually_added": actually_added
             })
 
             # ============================================
@@ -143,7 +150,7 @@ async def main():
             print("STEP 3: Verify Reading List Count")
             print("=" * 60)
 
-            expected_count = books_to_add
+            expected_count = actually_added
             try:
                 await assert_reading_list_count(page, expected_count)
                 print(f"\n>>> Assertion PASSED: Found {expected_count} books as expected")

@@ -54,7 +54,7 @@ class ReadingListPage(BasePage):
         """
         try:
             # Wait a bit for the page to load
-            await self.page.wait_for_timeout(1000)
+            await self.page.wait_for_timeout(300)
 
             # Try to find book items
             items = await self.page.query_selector_all(self.BOOK_ITEMS)
@@ -101,18 +101,49 @@ class ReadingListPage(BasePage):
 
         return counts
 
-    async def remove_book_from_list(self) -> bool:
+    async def remove_book_from_list(self, list_type: str = "want-to-read") -> bool:
         """Remove one book from the current list. Returns True if a book was removed."""
         try:
-            # Look for the reading-log form button (removes book from shelf)
-            remove_btn = await self.page.query_selector("form.reading-log.primary-action button")
-            if remove_btn:
-                await remove_btn.click()
-                await self.page.wait_for_timeout(1000)
-                return True
+            count_before = await self.get_book_count()
+            if count_before == 0:
+                return False
+
+            # Try multiple selectors - different lists have different buttons
+            remove_selectors = [
+                "button.remove-from-list",  # want-to-read list
+                "form.reading-log.primary-action button",  # already-read list
+            ]
+
+            for selector in remove_selectors:
+                remove_btn = await self.page.query_selector(selector)
+                if remove_btn and await remove_btn.is_visible():
+                    # Click and wait for response (not navigation)
+                    async with self.page.expect_response(lambda r: "reading" in r.url or "books" in r.url) as response_info:
+                        await remove_btn.click()
+
+                    # Wait for response to complete
+                    response = await response_info.value
+                    await self.page.wait_for_timeout(200)
+
+                    # Navigate back to list
+                    await self.navigate_to_reading_list(list_type)
+
+                    # Verify book was removed
+                    count_after = await self.get_book_count()
+                    if count_after < count_before:
+                        return True
+                    else:
+                        logger.warning(f"Book not removed: {count_before} -> {count_after}")
+                        return False
+
             return False
         except Exception as e:
             logger.warning(f"Error removing book: {e}")
+            # Try to navigate back to list
+            try:
+                await self.navigate_to_reading_list(list_type)
+            except Exception:
+                pass
             return False
 
     async def clear_reading_list(self, list_type: str = "want-to-read") -> int:
@@ -134,10 +165,8 @@ class ReadingListPage(BasePage):
             if count == 0:
                 break
 
-            if await self.remove_book_from_list():
+            if await self.remove_book_from_list(list_type):
                 removed += 1
-                await self.page.reload()
-                await self.page.wait_for_load_state("networkidle")
             else:
                 break
 
