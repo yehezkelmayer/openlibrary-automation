@@ -65,6 +65,11 @@ async def main():
             print(">>> WARNING: Not logged in. Run 'python save_auth_manually.py' first.")
             print(">>> Continuing with limited functionality...\n")
 
+        # Create Page Objects once and reuse them
+        search_page = SearchPage(page)
+        book_page = BookPage(page)
+        reading_list = ReadingListPage(page)
+
         # ============================================
         # 0. Clear Reading Lists (Fresh Start)
         # ============================================
@@ -72,8 +77,6 @@ async def main():
             print("\n" + "=" * 60)
             print("STEP 0: Clearing Reading Lists")
             print("=" * 60)
-
-            reading_list = ReadingListPage(page)
             removed = await reading_list.clear_all_reading_lists()
             total_removed = sum(removed.values())
 
@@ -104,7 +107,7 @@ async def main():
         urls = []
         for search_query, max_year, limit in searches:
             found = await search_books_by_title_under_year(
-                page=page,
+                search_page=search_page,
                 query=search_query,
                 max_year=max_year,
                 limit=limit
@@ -132,7 +135,7 @@ async def main():
 
             books_to_add = min(len(urls), 12)  # Add up to 12 books
             actually_added = await add_books_to_reading_list(
-                page=page,
+                book_page=book_page,
                 urls=urls[:books_to_add],
                 screenshot_dir=str(SCREENSHOTS_DIR)
             )
@@ -152,7 +155,7 @@ async def main():
 
             expected_count = actually_added
             try:
-                await assert_reading_list_count(page, expected_count)
+                await assert_reading_list_count(reading_list, expected_count)
                 print(f"\n>>> Assertion PASSED: Found {expected_count} books as expected")
                 report.add_step("Verify Reading List", "PASS", {
                     "expected": expected_count,

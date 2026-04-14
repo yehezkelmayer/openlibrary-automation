@@ -12,7 +12,7 @@ class ReadingListPage(BasePage):
     # Locators - Updated for actual OpenLibrary structure
     READING_LIST_PATH = "/account/books/want-to-read"
     # Multiple selectors for book items
-    BOOK_ITEMS = ".searchResultItem, .list-book, li[class*='book'], .book-item, .booklist-item, li.book, .carousel-item, .book"
+    BOOK_ITEMS = "li:has(h3 a)"
     BOOK_COUNT_TEXT = ".results-count, .list-header, .book-count, h2"
     NO_BOOKS_MESSAGE = ".empty-list, .no-books, p:has-text('No books')"
     BOOK_TITLE_IN_LIST = ".resultTitle, .book-title, a.title, h3"

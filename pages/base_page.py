@@ -74,28 +74,3 @@ class BasePage:
             return True
         except Exception:
             return False
-
-    async def measure_performance(self) -> dict:
-        """Measure page performance metrics."""
-        metrics = await self.page.evaluate("""
-            () => {
-                const timing = performance.timing;
-                const paint = performance.getEntriesByType('paint');
-
-                const loadTime = timing.loadEventEnd - timing.navigationStart;
-                const domContentLoaded = timing.domContentLoadedEventEnd - timing.navigationStart;
-
-                let firstPaint = 0;
-                const fpEntry = paint.find(p => p.name === 'first-paint');
-                if (fpEntry) {
-                    firstPaint = fpEntry.startTime;
-                }
-
-                return {
-                    load_time_ms: loadTime > 0 ? loadTime : null,
-                    dom_content_loaded_ms: domContentLoaded > 0 ? domContentLoaded : null,
-                    first_paint_ms: firstPaint > 0 ? firstPaint : null
-                };
-            }
-        """)
-        return metrics

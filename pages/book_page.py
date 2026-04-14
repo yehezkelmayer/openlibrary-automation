@@ -57,10 +57,10 @@ class BookPage(BasePage):
                 continue
         return "Unknown Title"
 
-    async def _click_master_button(self, target_text: str) -> bool | str:
+    async def _click_master_button(self, target_text: str) -> bool:
         """
         Click the main reading button if it matches target text.
-        Returns True if clicked, False if not found, or current status text if already set.
+        Returns True if successfully set to target status, False otherwise.
         """
         try:
             await self.page.wait_for_selector(SELECTORS["master_button"], timeout=5000)
@@ -76,8 +76,9 @@ class BookPage(BasePage):
                 logger.info(f"Book already marked as '{target_text}'")
                 return True
             else:
-                # Already has different status
-                return current_text
+                # Already has different status - need to use dropdown
+                logger.info(f"Book has different status: '{current_text}'")
+                return False
 
         # Not activated - try to click
         master_btn = await self.page.query_selector(SELECTORS["master_button"])
@@ -141,17 +142,14 @@ class BookPage(BasePage):
         logger.info(f"Adding book to reading list with status: {target_text}")
 
         # Try master button first
-        result = await self._click_master_button(target_text)
-
-        if result is True:
+        if await self._click_master_button(target_text):
             logger.info(f"Successfully added with status: {status}")
             return status
 
-        if result is False or isinstance(result, str):
-            # Try the dropdown buttons
-            if await self._click_reading_button(target_text):
-                logger.info(f"Successfully added with status: {status}")
-                return status
+        # Try the dropdown buttons
+        if await self._click_reading_button(target_text):
+            logger.info(f"Successfully added with status: {status}")
+            return status
 
         logger.warning(f"Could not add book with status: {status}")
         return None  # Return None to indicate failure

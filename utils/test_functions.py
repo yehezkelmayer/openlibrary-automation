@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 async def search_books_by_title_under_year(
-    page: Page,
+    search_page: SearchPage,
     query: str,
     max_year: int,
     limit: int = 5
@@ -19,7 +19,7 @@ async def search_books_by_title_under_year(
     Uses Advanced Search URL parameters for efficient filtering.
 
     Args:
-        page: Playwright page instance
+        search_page: SearchPage instance (Page Object)
         query: Search query string
         max_year: Maximum publication year (inclusive)
         limit: Maximum number of URLs to collect (default: 5)
@@ -28,8 +28,6 @@ async def search_books_by_title_under_year(
         List of book URLs matching the criteria
     """
     logger.info(f"Searching for '{query}' with max_year={max_year}, limit={limit}")
-
-    search_page = SearchPage(page)
 
     # Use advanced search with year filter (via URL)
     await search_page.search_with_year_filter(query, max_year)
@@ -47,24 +45,29 @@ async def search_books_by_title_under_year(
 
 
 async def add_books_to_reading_list(
-    page: Page,
+    book_page: BookPage,
     urls: list[str],
-    screenshot_dir: str = "screenshots"
+    screenshot_dir: str = "screenshots",
+    random_seed: int = None
 ) -> int:
     """
     Add books to reading list with random status selection.
 
     Args:
-        page: Playwright page instance
+        book_page: BookPage instance (Page Object)
         urls: List of book URLs to add
         screenshot_dir: Directory to save screenshots
+        random_seed: Optional seed for reproducible random choices (for debugging)
 
     Returns:
         Number of books successfully added
     """
+    if random_seed is not None:
+        random.seed(random_seed)
+        logger.info(f"Using random seed: {random_seed}")
+
     logger.info(f"Adding {len(urls)} books to reading list")
 
-    book_page = BookPage(page)
     success_count = 0
 
     for idx, url in enumerate(urls, 1):
@@ -100,22 +103,20 @@ async def add_books_to_reading_list(
 
 
 async def assert_reading_list_count(
-    page: Page,
+    reading_list: ReadingListPage,
     expected_count: int
 ) -> None:
     """
     Verify the reading list contains the expected number of books.
 
     Args:
-        page: Playwright page instance
+        reading_list: ReadingListPage instance (Page Object)
         expected_count: Expected number of books
 
     Raises:
         AssertionError: If count doesn't match expected
     """
     logger.info(f"Verifying reading list count. Expected: {expected_count}")
-
-    reading_list = ReadingListPage(page)
 
     # Check both want-to-read and already-read lists
     total_count = 0
@@ -152,28 +153,29 @@ async def measure_page_performance(
     Returns:
         Dictionary with performance metrics
     """
-    from pages import BasePage
+    from helpers.performance_helper import PerformanceHelper
 
     logger.info(f"Measuring performance for: {url}")
 
-    base_page = BasePage(page)
+    # Warn if no reporter provided
+    if reporter is None:
+        logger.warning("No reporter provided - measurements won't be saved")
+
+    perf_helper = PerformanceHelper(page)
 
     # Navigate and measure
-    if url.startswith("http"):
-        await page.goto(url, wait_until="load")
-    else:
-        await base_page.navigate(url)
-
-    await base_page.wait_for_load()
-
-    # Get performance metrics
-    metrics = await base_page.measure_performance()
+    metrics = await perf_helper.measure_with_navigation(url)
 
     # Check threshold
     load_time = metrics.get("load_time_ms")
     exceeded = False
+    measurement_error = False
 
-    if load_time and load_time > threshold_ms:
+    # Handle invalid load_time (0 or None)
+    if load_time is None or load_time <= 0:
+        logger.warning(f"Invalid load_time: {load_time} (URL: {url})")
+        measurement_error = True
+    elif load_time > threshold_ms:
         exceeded = True
         logger.warning(
             f"Threshold exceeded: {load_time}ms > {threshold_ms}ms (URL: {url})"
@@ -196,5 +198,6 @@ async def measure_page_performance(
         "dom_content_loaded_ms": metrics.get("dom_content_loaded_ms"),
         "first_paint_ms": metrics.get("first_paint_ms"),
         "threshold_ms": threshold_ms,
-        "exceeded": exceeded
+        "exceeded": exceeded,
+        "measurement_error": measurement_error
     }

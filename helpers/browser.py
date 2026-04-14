@@ -21,6 +21,7 @@ class Browser:
         self._browser: PWBrowser | None = None
         self._context: BrowserContext | None = None
         self._page: Page | None = None
+        self._current_storage_state: str | None = None  # Track current auth state
         self._initialized = True
 
     @classmethod
@@ -46,6 +47,15 @@ class Browser:
 
     async def get_context(self, storage_state: str | None = None) -> BrowserContext:
         """Get or create browser context with optional auth state."""
+        # Check if storage_state changed - need to recreate context
+        if self._context is not None and storage_state != self._current_storage_state:
+            # Close old context and page
+            if self._page is not None and not self._page.is_closed():
+                await self._page.close()
+                self._page = None
+            await self._context.close()
+            self._context = None
+
         if self._context is None:
             browser = await self.get_browser()
 
@@ -57,6 +67,7 @@ class Browser:
                 context_options["storage_state"] = storage_state
 
             self._context = await browser.new_context(**context_options)
+            self._current_storage_state = storage_state
 
         return self._context
 
