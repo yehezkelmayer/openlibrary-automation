@@ -3,6 +3,7 @@ OpenLibrary Automation - Main Entry Point
 Run with: python main.py
 """
 import asyncio
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -22,10 +23,100 @@ from utils.data_loader import DataLoader
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 # Configuration
 AUTH_STATE_PATH = Path(__file__).parent / "auth_state.json"
 SCREENSHOTS_DIR = Path(__file__).parent / "screenshots"
 REPORTS_DIR = Path(__file__).parent / "reports"
+
+
+async def auto_login(page) -> bool:
+    """
+    Automatically login using credentials from .env file.
+    Returns True if login successful, False otherwise.
+    """
+    import asyncio
+
+    email = os.getenv("OL_EMAIL")
+    password = os.getenv("OL_PASSWORD")
+
+    if not email or not password:
+        logger.info("No credentials in .env, skipping auto-login")
+        return False
+
+    print(">>> Attempting auto-login with .env credentials...")
+
+    try:
+        # Step 1: Find and click "Log In" button from current page
+        login_buttons = await page.query_selector_all("a.btn")
+        login_element = None
+
+        for button in login_buttons:
+            text = await button.inner_text()
+            if text.strip().lower() == "log in":
+                login_element = button
+                break
+
+        if login_element is None:
+            print(">>> Log In button not found, trying direct navigation")
+            await page.goto("https://openlibrary.org/account/login")
+        else:
+            await login_element.click()
+
+        # Step 2: Wait for login form
+        await page.wait_for_selector("form[id='register'].login.olform", timeout=5000)
+
+        # Step 3: Fill form via form element
+        form = await page.query_selector("form[id='register'].login.olform")
+        if form is None:
+            print(">>> Login form not found")
+            return False
+
+        email_input = await form.query_selector("input[name='username']")
+        password_input = await form.query_selector("input[name='password']")
+
+        if email_input is None or password_input is None:
+            print(">>> Form inputs not found")
+            return False
+
+        await email_input.fill(email)
+        await password_input.fill(password)
+
+        # Step 4: Submit via button
+        submit_button = await form.query_selector("button[type='submit']")
+        if submit_button is None:
+            print(">>> Submit button not found")
+            return False
+
+        await submit_button.click()
+
+        # Step 5: Wait for login to process
+        await asyncio.sleep(5)
+
+        # Step 6: Verify login - check if "Log In" button is gone
+        login_buttons = await page.query_selector_all("a.btn")
+        is_logged_in = True
+
+        for button in login_buttons:
+            text = await button.inner_text()
+            if text.strip().lower() == "log in":
+                is_logged_in = False
+                break
+
+        if is_logged_in:
+            print(">>> Auto-login successful!")
+            # Save auth state for future runs
+            await page.context.storage_state(path=str(AUTH_STATE_PATH))
+            logger.info(f"Auth state saved to {AUTH_STATE_PATH}")
+            return True
+        else:
+            print(">>> Auto-login failed (wrong credentials or CAPTCHA)")
+            return False
+
+    except Exception as e:
+        logger.error(f"Auto-login error: {e}")
+        return False
 
 
 async def main():
@@ -41,8 +132,8 @@ async def main():
 
     # Initialize
     browser = Browser.get_instance()
-    report = ReportGenerator()
-    perf_reporter = PerformanceReporter(REPORTS_DIR / "performance_report.json")
+    report = ReportGenerator(screenshots_dir=str(SCREENSHOTS_DIR))
+    perf_reporter = PerformanceReporter(report_dir=str(REPORTS_DIR / "performance"))
 
     # Load test data
     data_loader = DataLoader()
@@ -59,10 +150,18 @@ async def main():
 
         # Check if logged in
         is_logged_in = await page.query_selector("a[href*='/people/']") is not None
+
+        # If not logged in, try auto-login with .env credentials
+        if not is_logged_in:
+            is_logged_in = await auto_login(page)
+
         print(f"\n>>> Logged in: {is_logged_in}")
 
         if not is_logged_in:
-            print(">>> WARNING: Not logged in. Run 'python save_auth_manually.py' first.")
+            print(">>> WARNING: Not logged in.")
+            print(">>> Options:")
+            print(">>>   1. Add OL_EMAIL and OL_PASSWORD to .env file")
+            print(">>>   2. Run 'python setup_auth.py' for manual login")
             print(">>> Continuing with limited functionality...\n")
 
         # Create Page Objects once and reuse them
@@ -96,16 +195,14 @@ async def main():
         print("STEP 1: Search Books by Title Under Year")
         print("=" * 60)
 
-        # Multiple search queries for variety
-        searches = [
-            ("Dune", 1985, 5),
-            ("Foundation", 1970, 4),
-            ("1984", 1950, 3),
-            ("Brave New World", 1940, 3),
-        ]
+        # Load search queries from test_data.yaml
+        search_tests = test_config.get("search_tests", [])
 
         urls = []
-        for search_query, max_year, limit in searches:
+        for search_test in search_tests:
+            search_query = search_test.get("query")
+            max_year = search_test.get("max_year")
+            limit = search_test.get("limit", 5)
             found = await search_books_by_title_under_year(
                 search_page=search_page,
                 query=search_query,
@@ -120,7 +217,7 @@ async def main():
             print(f"    {i}. {url}")
 
         report.add_step("Search Books", "PASS" if urls else "WARN", {
-            "searches": [{"query": q, "max_year": y, "limit": l} for q, y, l in searches],
+            "searches": search_tests,
             "total_found": len(urls),
             "urls": urls
         })
@@ -176,11 +273,16 @@ async def main():
         print("STEP 4: Measure Page Performance")
         print("=" * 60)
 
-        performance_tests = [
-            ("Search Page", "https://openlibrary.org/search?q=python", 3000),
-            ("Book Page", "https://openlibrary.org/works/OL45883W", 2500),
-            ("Reading List", "https://openlibrary.org/account/books/want-to-read", 2000),
-        ]
+        # Load performance thresholds from test_data.yaml
+        perf_thresholds = test_config.get("performance_thresholds", {})
+        BASE_URL = "https://openlibrary.org"
+
+        performance_tests = []
+        for key, config in perf_thresholds.items():
+            name = config.get("name", key)
+            url = BASE_URL + config.get("url", "")
+            threshold = config.get("threshold_ms", 3000)
+            performance_tests.append((name, url, threshold))
 
         print("\n>>> Performance Results:")
         print("-" * 50)

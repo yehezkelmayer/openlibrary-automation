@@ -7,14 +7,11 @@ Automated E2E testing framework for OpenLibrary.org using Playwright and Python.
 ```
 openlibrary_automation/
 ├── main.py                  # Main entry point
-├── setup_auth.py            # Authentication setup script
-├── config/
-│   └── config.yaml          # Configuration settings
+├── setup_auth.py            # Manual authentication setup
+├── .env                     # Environment config (credentials)
 ├── data/
-│   ├── test_data.yaml       # Test data (YAML)
-│   └── test_data.json       # Test data (JSON)
+│   └── test_data.yaml       # Test data (searches, thresholds)
 ├── pages/
-│   ├── __init__.py
 │   ├── base_page.py         # Base Page Object class
 │   ├── search_page.py       # Search page POM
 │   ├── book_page.py         # Book page POM
@@ -23,13 +20,11 @@ openlibrary_automation/
 │   ├── browser.py           # Browser singleton
 │   └── report_generator.py  # HTML report generator
 ├── utils/
-│   ├── __init__.py
-│   ├── data_loader.py       # YAML/JSON data loader
-│   ├── logger.py            # Logging configuration
-│   ├── performance_reporter.py  # Performance metrics
+│   ├── data_loader.py       # YAML data loader
+│   ├── performance_reporter.py  # Performance metrics & history
 │   └── test_functions.py    # Core test functions
 ├── screenshots/             # Test screenshots
-├── reports/                 # HTML & JSON reports
+├── reports/                 # HTML & performance reports
 ├── requirements.txt         # Dependencies
 └── README.md
 ```
@@ -37,11 +32,13 @@ openlibrary_automation/
 ## Architecture
 
 ### Design Patterns
+
 - **Page Object Model (POM)**: Each page has a dedicated class with locators and methods
-- **Data-Driven Testing**: Test data loaded from external YAML/JSON files
+- **Data-Driven Testing**: Test data loaded from `data/test_data.yaml`
 - **Single Responsibility Principle**: Utilities separated by function
 
 ### Key Components
+
 1. **BasePage**: Common functionality (navigation, screenshots, performance)
 2. **SearchPage**: Book search with year filtering and pagination
 3. **BookPage**: Individual book operations (add to reading list)
@@ -68,53 +65,66 @@ playwright install chromium
 ## Configuration
 
 ### Environment Variables (.env)
-```
+
+```bash
+# Browser settings
 BASE_URL=https://openlibrary.org
 HEADLESS=true
 TIMEOUT=30000
+
+# OpenLibrary Login Credentials (required for full functionality)
+OL_EMAIL=your_email@example.com
+OL_PASSWORD=your_password
 ```
 
-### Config File (config/config.yaml)
-```yaml
-browser:
-  headless: true
-  timeout: 30000
+## Authentication Setup
 
-performance_thresholds:
-  search_page_ms: 3000
-  book_page_ms: 2500
-  reading_list_ms: 2000
-```
+### Option 1: Auto-Login with .env (Recommended)
 
-## Authentication Setup (Required)
+The simplest way - just add your OpenLibrary credentials to the `.env` file:
 
-OpenLibrary uses CAPTCHA on login. To bypass this, run the setup script once:
+1. Create an OpenLibrary account at: https://openlibrary.org/account/create
+2. Edit the `.env` file with your credentials:
+   ```bash
+   OL_EMAIL=your_email@example.com
+   OL_PASSWORD=your_password
+   ```
+3. Run the tests - login happens automatically!
+
+The session will be saved to `auth_state.json` for future runs.
+
+### Option 2: Manual Login (if CAPTCHA appears)
+
+If OpenLibrary shows CAPTCHA, use manual login:
 
 ```bash
 python setup_auth.py
 ```
 
 This will:
+
 1. Open a browser window
 2. Navigate to OpenLibrary login page
 3. Wait for you to login manually (complete any CAPTCHA)
 4. Save the session to `auth_state.json`
 
-After setup, the automation will use the saved session.
-
 ## Running Tests
 
 ```bash
-# Run with visible browser
-HEADLESS=false python main.py
+# 1. Configure credentials in .env file (one-time setup)
+#    Edit .env and set OL_EMAIL and OL_PASSWORD
 
-# Run headless (default)
+# 2. Run the tests
 python main.py
+
+# Run with visible browser (for debugging)
+HEADLESS=false python main.py
 ```
 
 ## Test Functions
 
 ### 1. search_books_by_title_under_year
+
 ```python
 async def search_books_by_title_under_year(
     page: Page,
@@ -123,12 +133,14 @@ async def search_books_by_title_under_year(
     limit: int = 5
 ) -> list[str]
 ```
+
 - Searches for books by title
 - Filters by publication year
 - Supports pagination
 - Returns list of book URLs
 
 ### 2. add_books_to_reading_list
+
 ```python
 async def add_books_to_reading_list(
     page: Page,
@@ -136,22 +148,26 @@ async def add_books_to_reading_list(
     screenshot_dir: str = "screenshots"
 ) -> None
 ```
+
 - Navigates to each book URL
 - Adds to "Want to Read" or "Already Read" (random)
 - Takes screenshot for each book
 
 ### 3. assert_reading_list_count
+
 ```python
 async def assert_reading_list_count(
     page: Page,
     expected_count: int
 ) -> None
 ```
+
 - Opens reading list page
 - Counts books
 - Asserts against expected count
 
 ### 4. measure_page_performance
+
 ```python
 async def measure_page_performance(
     page: Page,
@@ -159,27 +175,42 @@ async def measure_page_performance(
     threshold_ms: int
 ) -> dict
 ```
+
 - Measures load_time_ms, dom_content_loaded_ms, first_paint_ms
 - Logs warning if threshold exceeded
-- Generates performance_report.json
+- Saves to performance history
 
 ## Reports
 
 ### HTML Report
+
 Generated automatically at `reports/test_report.html` with:
+
 - Test step status (PASS/WARN/FAIL)
-- Step details
+- Step details with visualizations
+- Screenshots gallery
 - Summary statistics
 
-### Performance Report
-Generated at `reports/performance_report.json` with format:
+### Performance Reports
+
+Generated in `reports/performance/` directory:
+
+```
+reports/performance/
+├── summary.json           # Aggregated statistics
+├── run_20260415_130732.json
+├── run_20260415_140000.json
+└── ...                    # Up to 50 runs kept
+```
+
+Each run file contains:
 ```json
 {
-  "generated_at": "2024-01-01T12:00:00",
+  "run_id": "20260415_130732",
   "measurements": [...],
   "summary": {
     "avg_load_time_ms": 1500,
-    "max_load_time_ms": 2500
+    "thresholds_exceeded": 1
   }
 }
 ```
@@ -193,11 +224,11 @@ Generated at `reports/performance_report.json` with format:
 
 ## Performance Thresholds
 
-| Page | Threshold |
-|------|-----------|
-| Search Page | 3000ms |
-| Book Page | 2500ms |
-| Reading List | 2000ms |
+| Page         | Threshold |
+| ------------ | --------- |
+| Search Page  | 3000ms    |
+| Book Page    | 2500ms    |
+| Reading List | 2000ms    |
 
 ## Dependencies
 

@@ -5,7 +5,6 @@ from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
-
 class BasePage:
     """Base class for all Page Objects."""
 
